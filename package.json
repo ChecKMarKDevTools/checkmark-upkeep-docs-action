@@ -1,0 +1,59 @@
+{
+    "name": "checkmark-upkeep-docs-action",
+    "version": "0.0.1",
+    "type": "module",
+    "description": "🚧 WIP: Human-in-the-loop documentation automation for systems architecture. Coordinates GitHub workflows, agents, and reusable prompts to keep architecture docs current and consistent. Next up: prompt-driven test cases, README upkeep, and developer guide generation.",
+    "scripts": {
+        "test": "vitest --run",
+        "test:watch": "vitest",
+        "test:integration": "vitest --run --config vitest.integration.config.js",
+        "test:coverage": "vitest --run --coverage",
+        "lint": "eslint src/ tests/",
+        "format": "prettier --write .",
+        "build": "ncc build src/main.js -o dist"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/actions/upkeep-docs.git"
+    },
+    "keywords": [
+        "checkmark",
+        "github",
+        "automation",
+        "copilot",
+        "coding-agent",
+        "github-action",
+        "docs-generation",
+        "human-in-the-loop",
+        "systems-architecture",
+        "developer-tools",
+        "prompt-engineering",
+        "ai-coordination",
+        "workflow-automation",
+        "architecture-docs",
+        "markdown"
+    ],
+    "author": "Ashley Childress",
+    "license": "Polyform-Shield-Non-Standard-1.0.0",
+    "bugs": {
+        "url": "https://github.com/ChecKMarKDevTools/checkmark-upkeep-docs-action/issues"
+    },
+    "homepage": "https://github.com/ChecKMarKDevTools/checkmark-upkeep-docs-action",
+    "volta": {
+        "node": "22.21.1"
+    },
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@actions/github": "^6.0.1"
+    },
+    "devDependencies": {
+        "@vercel/ncc": "^0.38.4",
+        "@vitest/coverage-v8": "^4.0.5",
+        "eslint": "^9.38.0",
+        "prettier": "^3.6.2",
+        "vitest": "^4.0.5"
+    }
+}

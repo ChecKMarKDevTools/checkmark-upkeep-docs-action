@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Commit Message Generator",
+  "description": "Automatically generates a conventional commit message from staged changes and saves it to ./commit.tmp file before Kiro completes any turn",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Generate a conventional commit message from staged changes and save to ./commit.tmp using the custom prompt rules. Check for existing commit linters in the repo and follow their rules. Include proper RAI attribution footer based on AI contribution level. Use get_changed_files tool to analyze staged changes, or fall back to runInTerminal with git diff --cached --no-pager if needed. Save the final message to commit.tmp and display it in a code block for review."
+  }
+}
