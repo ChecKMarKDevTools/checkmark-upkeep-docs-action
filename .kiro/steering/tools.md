@@ -59,7 +59,7 @@ get-library-docs --library-id="/mermaid-js/mermaid" --topic="sequence diagrams"
 
 ### Git CLI
 
-- Always use the --no-pager flag so the terminal doesn't get stuck
+- Always use the --no-pager flag immediately after any `git` terminal command and before the command name, so the terminal doesn't get stuck
 
 ### GitHub Actions
 

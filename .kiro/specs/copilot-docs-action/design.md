@@ -15,7 +15,7 @@ graph TB
     C --> D[Coding Agent]
     D --> E[Generate Docs in User Repo]
     D --> F[Open Pull Request]
-    
+
     G[checkmark-upkeep-docs-action Repository] --> H[CI/CD Pipeline]
     H --> I[Security Scanning]
     H --> J[Testing]
@@ -86,9 +86,9 @@ outputs:
 **CLI Wrapper Functions**:
 
 ```javascript
-async function authenticateCopilotCLI(token) { }
-async function promptCodingAgent(prompt, repoContext) { }
-async function isCopilotCLIAvailable() { }
+async function authenticateCopilotCLI(token) {}
+async function promptCodingAgent(prompt, repoContext) {}
+async function isCopilotCLIAvailable() {}
 ```
 
 ### 3. Prompt Execution

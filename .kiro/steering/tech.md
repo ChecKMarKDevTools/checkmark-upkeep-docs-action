@@ -78,6 +78,33 @@ npm run build
 - **Input Validation**: All user inputs must be validated and sanitized
 - **Security First**: Never log tokens or sensitive information
 
+## Task Completion Validation Requirements
+
+**MANDATORY**: Before marking any task as completed, you MUST run the complete validation sequence:
+
+**Single Command**: `npm run validate` - Runs format, lint, unit tests with coverage, and integration tests
+
+**Individual Steps** (if needed):
+
+1. **Format Code**: `npm run format` - Must complete without errors
+2. **Lint Code**: `npm run lint` - Must show 0 errors, 0 warnings
+3. **Run Unit Tests**: `npm test` - All tests must pass
+4. **Run Integration Tests**: `npm run test:integration` - All tests must pass
+
+**Failure Policy**: If ANY step in the validation sequence fails, the task CANNOT be marked as completed. Fix all issues and re-run the complete validation sequence.
+
+**Prettier-ESLint Integration**:
+
+- Uses `eslint-config-prettier` to disable conflicting ESLint formatting rules
+- Prettier handles all code formatting, ESLint handles code quality
+- No conflicts between Prettier and ESLint formatting rules
+
+**ESLint Strict Rules**:
+
+- **No ESLint Disable Comments**: Any attempt to disable ESLint rules with comments will result in hard errors
+- **No Try-Catch in Tests**: Test files must use accurate assertions instead of error handling
+- **Airbnb Base Standards**: All code must conform to airbnb-base ESLint configuration
+
 ## Astro Documentation Site Guidelines
 
 ### Theme & Styling

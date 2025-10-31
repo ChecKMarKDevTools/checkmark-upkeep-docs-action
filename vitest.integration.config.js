@@ -7,6 +7,6 @@ export default defineConfig({
     include: ['tests/integration/**/*.test.js'],
     exclude: ['tests/unit/**/*'],
     testTimeout: 30000, // Integration tests may take longer
-    setupFiles: ['tests/setup.js']
-  }
+    setupFiles: ['tests/setup.js'],
+  },
 });

@@ -50,5 +50,5 @@ Generated-by: Kiro <kiro@example.com>
 ## Tools to Use
 
 - `get_changed_files` (filter for staged; if none, use unstaged)
-- `runInTerminal` with `git diff --cached --no-pager` as fallback
+- `runInTerminal` with `git --no-pager diff --cached` as fallback
 - Save final message to `./commit.tmp`

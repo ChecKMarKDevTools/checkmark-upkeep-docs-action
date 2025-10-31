@@ -1,0 +1,65 @@
+name: Update Documentation with Copilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom-config:
+        description: 'Path to custom configuration file'
+        required: false
+        default: ''
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install GitHub Copilot CLI
+        run: |
+          npm install -g @github/copilot
+          
+      - name: Authenticate Copilot CLI
+        run: |
+          echo "Setting up Copilot CLI authentication..."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read documentation prompt
+        id: read-prompt
+        run: |
+          if [ -f ".github/prompts/documentation.md" ]; then
+            PROMPT=$(cat .github/prompts/documentation.md)
+          else
+            PROMPT="Generate comprehensive markdown documentation for this repository. Analyze the codebase structure, dependencies, and functionality to create clear, helpful documentation including setup instructions, usage examples, and API references. Create or update documentation files in a docs directory and open a pull request with the changes."
+          fi
+          
+          # Add repository context to prompt
+          REPO_NAME="${{ github.repository }}"
+          FULL_PROMPT="Repository: $REPO_NAME
+
+$PROMPT"
+          
+          # Add custom config if provided
+          if [ -n "${{ github.event.inputs.custom-config }}" ]; then
+            FULL_PROMPT="$FULL_PROMPT
+
+Custom configuration: ${{ github.event.inputs.custom-config }}"
+          fi
+          
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "$FULL_PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate documentation with Copilot CLI
+        run: |
+          echo "🤖 Prompting GitHub Copilot to generate documentation..."
+          copilot "${{ steps.read-prompt.outputs.prompt }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output results
+        run: |
+          echo "✅ Documentation generation completed"
+          echo "Check for any pull requests or changes made by Copilot"

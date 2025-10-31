@@ -9,23 +9,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      exclude: [
-        'node_modules/',
-        'tests/',
-        'dist/',
-        'docs/',
-        '*.config.js',
-        'coverage/'
-      ],
+      exclude: ['node_modules/', 'tests/', 'dist/', 'docs/', '*.config.js', 'coverage/'],
       thresholds: {
         global: {
           branches: 85,
           functions: 85,
           lines: 85,
-          statements: 85
-        }
-      }
+          statements: 85,
+        },
+      },
     },
-    setupFiles: ['tests/setup.js']
-  }
+    setupFiles: ['tests/setup.js'],
+  },
 });

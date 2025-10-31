@@ -4,16 +4,15 @@
 
 ![Node.js Badge](https://img.shields.io/badge/Node.js-v22-5FA04E?logo=nodedotjs&logoColor=fff&style=for-the-badge) ![GitHub Copilot Badge](https://img.shields.io/badge/GitHub%20Copilot-Enabled-brightgreen?logo=githubcopilot&logoColor=fff&style=for-the-badge) ![gitignore.io Badge](https://img.shields.io/badge/gitignore.io-204ECF?logo=gitignoredotio&logoColor=fff&style=for-the-badge)
 
-> 🦄 I’ve been threatening to build this for months, and here it finally is — ChecKMarK Upkeep Docs Action. Built to play nice with GitHub, using your own rules, tokens, and permissions. I’m just the orchestrator in the situation: you pull the trigger, I hand it straight to the Coding Agent with my documentation prompts. From there, the plan is simple—*magic*. 🪄
+> 🦄 I’ve been threatening to build this for months, and here it finally is — ChecKMarK Upkeep Docs Action. Built to play nice with GitHub, using your own rules, tokens, and permissions. I’m just the orchestrator in the situation: you pull the trigger, I hand it straight to the Coding Agent with my documentation prompts. From there, the plan is simple—_magic_. 🪄
 
 **ChecKMarK Upkeep Docs Action** is a GitHub Action that leverages the GitHub Copilot CLI to send Coding Agent on a mission to create the perfect systems documentation automatically. It’s the first step toward full doc orchestration—an intelligent prompter for GitHub’s coding agent that analyzes your codebase and builds documentation through pull requests.
 
 I plan to expand into other areas (test cases are probably next), but this one already works well enough to stand on its own.
 
-Your data is yours. I don’t log or store anything, ever. At some point, I may enable anonymous statistics, but all activity is visible directly inside your workflow runs—no hidden analytics, no surprises. This repo is scanned regularly for vulnerabilities, and every prompt sent to Coding Agent is hand-written by me and scrubbed again by GitHub before it ever looks at your repo. 
+Your data is yours. I don’t log or store anything, ever. At some point, I may enable anonymous statistics, but all activity is visible directly inside your workflow runs—no hidden analytics, no surprises. This repo is scanned regularly for vulnerabilities, and every prompt sent to Coding Agent is hand-written by me and scrubbed again by GitHub before it ever looks at your repo.
 
 Once Coding Agent takes over, my job is done here—that means it's up to you to iterate on results with the `@copilot` mention and report back any strangeness—I'll get it on the list.
-
 
 ## ✨ Features
 
@@ -29,7 +28,7 @@ name: Generate Documentation
 on:
   workflow_dispatch:
   pull_request:
-     types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize]
 
 jobs:
   upkeep-docs:
@@ -53,9 +52,9 @@ jobs:
 
 ## 🔧 Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | ✅ | `${{ github.token }}` |
+| Input          | Description                 | Required | Default               |
+| -------------- | --------------------------- | -------- | --------------------- |
+| `github-token` | GitHub token for API access | ✅       | `${{ github.token }}` |
 
 ## 🏗️ Development
 
