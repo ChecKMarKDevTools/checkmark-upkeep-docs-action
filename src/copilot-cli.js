@@ -13,6 +13,21 @@ class CopilotCLI {
   }
 
   /**
+   * Check if Copilot CLI is available in the environment
+   * @returns {Promise<boolean>} True if CLI is available
+   */
+  static async isAvailable() {
+    try {
+      const { stdout } = await execAsync('gh copilot --version');
+      core.debug(`Copilot CLI version: ${stdout.trim()}`);
+      return true;
+    } catch (error) {
+      core.debug(`Copilot CLI not available: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
    * Authenticate with Copilot CLI
    * @param {string} githubToken - GitHub personal access token
    */

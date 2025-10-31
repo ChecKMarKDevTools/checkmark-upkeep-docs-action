@@ -51,9 +51,4 @@ const logContext = (context) => {
   core.debug(`Ref: ${context.ref}`);
 };
 
-export {
-  validateInputs,
-  handleError,
-  sanitizeInput,
-  logContext,
-};
+export { validateInputs, handleError, sanitizeInput, logContext };

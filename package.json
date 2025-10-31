@@ -8,7 +8,7 @@
     "test:coverage": "vitest --run --coverage",
     "test:watch": "vitest",
     "test:integration": "vitest --run --config vitest.integration.config.js",
-    "lint": "eslint src/ tests/",
+    "lint": "eslint src/",
     "format": "prettier --write .",
     "build": "ncc build src/main.js -o dist",
     "validate": "npm run format && npm run lint && npm run test:coverage && npm run test:integration"

@@ -1,0 +1,7 @@
+# Ignore GitHub workflow files that have complex YAML structures
+.github/workflows/update-docs.yml
+
+# Ignore generated files
+coverage/
+dist/
+node_modules/
