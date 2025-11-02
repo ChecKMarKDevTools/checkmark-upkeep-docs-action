@@ -6,7 +6,7 @@ I take security seriously. If you discover a vulnerability in **ChecKMarK Upkeep
 
 ### How to Report
 
-**Do not report security issues through public GitHub issues.**  
+**Do not report security issues through public GitHub issues.**
 
 Instead, email:
 **[human@checkmarkdevtools.dev](mailto:human@checkmarkdevtools.dev)**

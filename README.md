@@ -2,6 +2,8 @@
 
 [![License: Polyform Shield](https://img.shields.io/badge/License-Polyform%20Shield%201.0.0-yellow.svg?style=for-the-badge)](LICENSE) ![Static Badge](https://img.shields.io/badge/project_type-toy-blue?style=for-the-badge) ![GitHub Created At](https://img.shields.io/github/created-at/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/checkmarkdevtools/checkmark-upkeep-docs-action?display_timestamp=committer&style=for-the-badge) ![GitHub Release](https://img.shields.io/github/v/release/checkmarkdevtools/checkmark-upkeep-docs-action?include_prereleases&display_name=release&style=for-the-badge) ![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge)
 
+![GitHub stars](https://img.shields.io/github/stars/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge) ![GitHub forks](https://img.shields.io/github/forks/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge) ![GitHub issues](https://img.shields.io/github/issues/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge) ![GitHub pull requests](https://img.shields.io/github/issues-pr/checkmarkdevtools/checkmark-upkeep-docs-action?style=for-the-badge)
+
 ![Node.js Badge](https://img.shields.io/badge/Node.js-v22-5FA04E?logo=nodedotjs&logoColor=fff&style=for-the-badge) ![GitHub Copilot Badge](https://img.shields.io/badge/GitHub%20Copilot-Enabled-brightgreen?logo=githubcopilot&logoColor=fff&style=for-the-badge) ![gitignore.io Badge](https://img.shields.io/badge/gitignore.io-204ECF?logo=gitignoredotio&logoColor=fff&style=for-the-badge)
 
 > 🦄 I’ve been threatening to build this for months, and here it finally is — ChecKMarK Upkeep Docs Action. Built to play nice with GitHub, using your own rules, tokens, and permissions. I’m just the orchestrator in the situation: you pull the trigger, I hand it straight to the Coding Agent with my documentation prompts. From there, the plan is simple—_magic_. 🪄
@@ -34,7 +36,7 @@ jobs:
   upkeep-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v
+      - uses: actions/checkout@v6
       - uses: actions/upkeep-docs@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,6 +57,41 @@ jobs:
 | Input          | Description                 | Required | Default               |
 | -------------- | --------------------------- | -------- | --------------------- |
 | `github-token` | GitHub token for API access | ✅       | `${{ github.token }}` |
+
+### Required Token Permissions
+
+The action requires the following permissions for the `GITHUB_TOKEN`:
+
+- **`contents: write`** - Create and modify documentation files
+- **`pull-requests: write`** - Create pull requests with generated documentation
+- **`metadata: read`** - Read repository metadata (default)
+
+#### Minimal Permission Configuration
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+  metadata: read
+```
+
+#### Using Default GITHUB_TOKEN
+
+The default `GITHUB_TOKEN` typically has sufficient permissions, but you may need to explicitly grant write permissions in your workflow:
+
+```yaml
+jobs:
+  upkeep-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upkeep-docs@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ## 🏗️ Development
 
@@ -121,6 +158,13 @@ Security is a top priority. Please see our [Security Policy](SECURITY.md) for re
 Licensed under my personal [Polyform Shield 1.0.0](LICENSE) - allows free use with appropriate restrictions. That means this project isn’t here for resale or repackaging. You can build with it, learn from it, fork it, remix it — just don’t slap a logo on top and call it your startup. I built this for the community, not for recycling relabeled as entrenupership. 💅
 
 ---
+
+## 🌐 Connect
+
+[![Dev.to](https://img.shields.io/badge/dev.to-0A0A0A?style=for-the-badge&logo=devdotto&logoColor=white)](https://dev.to/anchildress1)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/anchildress1)
+[![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://reddit.com/u/anchildress1)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/anchildress1)
 
 **[📖 Documentation](./docs/)**
 **[🐛 Issues](https://github.com/ChecKMarKDevTools/checkmark-upkeep-docs-action/issues)**
