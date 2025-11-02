@@ -162,6 +162,7 @@ export default defineConfig({
 - **MAJOR increments**: Only when explicitly requested for breaking changes
 
 **Implementation**:
+
 - Always increment the PATCH version in `package.json` for routine updates
 - Only increment MINOR or MAJOR versions when specifically instructed
 - Follow this policy consistently across all development work

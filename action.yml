@@ -6,12 +6,15 @@ inputs:
   github-token:
     description: 'GitHub token for authentication'
     required: true
+  custom-config:
+    description: 'Path to custom configuration file (optional)'
+    required: false
 
 outputs:
-  pr-number:
-    description: 'Pull request number created by coding agent'
-  pr-url:
-    description: 'URL of the pull request with generated documentation'
+  triggered:
+    description: 'Whether the coding agent was successfully triggered'
+  timestamp:
+    description: 'Timestamp when the coding agent was triggered'
 
 runs:
   using: 'node22'

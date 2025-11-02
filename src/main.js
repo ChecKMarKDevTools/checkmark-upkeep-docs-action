@@ -16,13 +16,13 @@ const run = async () => {
     logContext(context);
 
     // Get and validate all inputs
-    const inputs = {
+    const rawInputs = {
       githubToken: core.getInput('github-token', { required: true }),
       customConfig: core.getInput('custom-config', { required: false }),
     };
 
     core.info('📋 Validating action inputs...');
-    validateInputs(inputs);
+    const inputs = validateInputs(rawInputs);
 
     // Initialize and authenticate Copilot CLI
     core.info('🔧 Initializing Copilot CLI integration...');
@@ -39,7 +39,7 @@ const run = async () => {
     core.info(`🔐 Authentication successful: ${authResult.version}`);
 
     // Validate complete CLI setup
-    const setupValidation = await copilot.validateSetup();
+    const setupValidation = await CopilotCLI.validateSetup();
     if (setupValidation.errors.length > 0) {
       throw new Error(`CLI setup validation failed: ${setupValidation.errors.join(', ')}`);
     }
@@ -66,12 +66,30 @@ const run = async () => {
     core.debug(`Repository: ${executionContext.repository.owner}/${executionContext.repository.name}`);
     core.debug(`Branch: ${executionContext.repository.branch}`);
 
-    // TODO: Implement documentation generation logic in future tasks
-    core.info('✅ Upkeep Docs action completed successfully');
+    // Trigger documentation generation workflow using GitHub Copilot coding agent
+    core.info('🚀 Triggering documentation generation workflow...');
+
+    const repositoryContext = {
+      owner: executionContext.repository.owner,
+      name: executionContext.repository.name,
+      branch: executionContext.repository.branch,
+      language: 'javascript', // TODO: Detect from repository in future tasks
+      hasReadme: false, // TODO: Detect from repository in future tasks
+      hasDocs: false, // TODO: Detect from repository in future tasks
+      customConfig: inputs.customConfig || {},
+    };
+
+    const workflowResult = await copilot.triggerDocumentationWorkflow(repositoryContext);
+
+    core.info(`✅ Documentation workflow triggered successfully`);
+    core.info(`🤖 GitHub Copilot coding agent is now working on your documentation`);
 
     // Set outputs for workflow integration
-    core.setOutput('pr-number', '');
-    core.setOutput('pr-url', '');
+    core.setOutput('triggered', 'true');
+    core.setOutput('timestamp', workflowResult.timestamp);
+
+    core.info('✅ Upkeep Docs action completed successfully');
+    core.info('📬 You will receive notifications when the documentation PR is created');
   } catch (error) {
     // Comprehensive error handling with user feedback
     core.error(`❌ Upkeep Docs action failed: ${error.message}`);

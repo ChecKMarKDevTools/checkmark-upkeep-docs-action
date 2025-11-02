@@ -13,64 +13,183 @@ vi.mock('@actions/core', () => ({
   debug: vi.fn(),
 }));
 
+// Mock utils
+vi.mock('../../src/utils.js', () => ({
+  sanitizeInput: vi.fn((input) => input),
+}));
+
 describe('CopilotCLI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.GITHUB_TOKEN;
   });
 
-  describe('install', () => {
-    it('should skip installation if CLI already exists', async () => {
-      // Mock successful version check (CLI already installed)
+  describe('isCopilotCLIAvailable', () => {
+    it('should return true if CLI is available', async () => {
       const { exec } = await import('child_process');
       exec.mockImplementation((cmd, callback) => {
-        if (cmd === 'gh --version') {
-          callback(null, { stdout: 'gh version 2.0.0' });
+        if (cmd === 'gh copilot --version') {
+          callback(null, { stdout: 'copilot version 1.0.0' });
+        }
+      });
+
+      const result = await CopilotCLI.isCopilotCLIAvailable();
+      expect(result).toBe(true);
+    });
+
+    it('should return false if CLI is not available', async () => {
+      const { exec } = await import('child_process');
+      exec.mockImplementation((cmd, callback) => {
+        callback(new Error('command not found'));
+      });
+
+      const result = await CopilotCLI.isCopilotCLIAvailable();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('authenticateCopilotCLI', () => {
+    it('should authenticate with valid token', async () => {
+      const { exec } = await import('child_process');
+      exec.mockImplementation((cmd, callback) => {
+        if (cmd.includes('gh auth login')) {
+          callback(null, { stdout: 'success' });
         } else if (cmd === 'gh copilot --version') {
           callback(null, { stdout: 'copilot version 1.0.0' });
         }
       });
 
-      await expect(CopilotCLI.install()).resolves.not.toThrow();
+      const copilot = new CopilotCLI();
+      const result = await copilot.authenticateCopilotCLI('ghp_1234567890123456789012345678901234567890');
+
+      expect(result.success).toBe(true);
+      expect(result.authenticated).toBe(true);
+      expect(process.env.GITHUB_TOKEN).toBe('ghp_1234567890123456789012345678901234567890');
     });
 
-    it('should install CLI if not present', async () => {
-      // Mock CLI not found, then successful installation
-      const { exec } = await import('child_process');
-      exec.mockImplementation((cmd, callback) => {
-        if (cmd === 'gh --version') {
-          callback(new Error('command not found'));
-        } else if (cmd === 'gh copilot --version') {
-          callback(new Error('command not found'));
-        } else {
-          callback(null, { stdout: 'success' });
-        }
-      });
+    it('should reject invalid token format', async () => {
+      const copilot = new CopilotCLI();
 
-      await expect(CopilotCLI.install()).resolves.not.toThrow();
+      await expect(copilot.authenticateCopilotCLI('invalid')).rejects.toThrow('Invalid GitHub token format');
     });
   });
 
-  describe('authenticate', () => {
-    it('should authenticate with token', async () => {
+  describe('triggerCodingAgent', () => {
+    it('should trigger coding agent successfully', async () => {
+      const { exec } = await import('child_process');
+      exec.mockImplementation((cmd, callback) => {
+        callback(null, { stdout: 'Coding agent triggered' });
+      });
+
+      const copilot = new CopilotCLI();
+      copilot.authenticated = true;
+
+      const repositoryContext = {
+        owner: 'test-owner',
+        name: 'test-repo',
+        branch: 'main',
+      };
+
+      const result = await copilot.triggerCodingAgent('GENERATE_DOCUMENTATION', repositoryContext);
+
+      expect(result.success).toBe(true);
+      expect(result.promptKey).toBe('GENERATE_DOCUMENTATION');
+      expect(result.message).toContain('triggered successfully');
+    });
+
+    it('should reject invalid prompt key', async () => {
+      const copilot = new CopilotCLI();
+      copilot.authenticated = true;
+
+      const repositoryContext = {
+        owner: 'test-owner',
+        name: 'test-repo',
+        branch: 'main',
+      };
+
+      await expect(copilot.triggerCodingAgent('INVALID_PROMPT', repositoryContext)).rejects.toThrow(
+        'Invalid prompt key: INVALID_PROMPT'
+      );
+    });
+
+    it('should require authentication', async () => {
+      const copilot = new CopilotCLI();
+
+      const repositoryContext = {
+        owner: 'test-owner',
+        name: 'test-repo',
+        branch: 'main',
+      };
+
+      await expect(copilot.triggerCodingAgent('GENERATE_DOCUMENTATION', repositoryContext)).rejects.toThrow(
+        'Copilot CLI not authenticated'
+      );
+    });
+  });
+
+  describe('validateSetup', () => {
+    it('should validate successful setup', async () => {
       const { exec } = await import('child_process');
       exec.mockImplementation((cmd, callback) => {
         callback(null, { stdout: 'success' });
       });
 
-      await expect(CopilotCLI.authenticate('test-token')).resolves.not.toThrow();
-      expect(process.env.GITHUB_TOKEN).toBe('test-token');
+      const result = await CopilotCLI.validateSetup();
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.checks.githubCLI).toBe(true);
+      expect(result.checks.copilotExtension).toBe(true);
+    });
+
+    it('should detect missing CLI', async () => {
+      const { exec } = await import('child_process');
+      exec.mockImplementation((cmd, callback) => {
+        callback(new Error('command not found'));
+      });
+
+      const result = await CopilotCLI.validateSetup();
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.checks.githubCLI).toBe(false);
     });
   });
 
-  describe('run', () => {
-    it('should run copilot command', async () => {
+  describe('triggerDocumentationWorkflow', () => {
+    it('should trigger documentation workflow successfully', async () => {
       const { exec } = await import('child_process');
       exec.mockImplementation((cmd, callback) => {
-        callback(null, { stdout: 'copilot response' });
+        callback(null, { stdout: 'Workflow triggered' });
       });
 
-      const result = await CopilotCLI.run('test prompt');
-      expect(result).toBe('copilot response');
+      const copilot = new CopilotCLI();
+      copilot.authenticated = true;
+
+      const repositoryContext = {
+        owner: 'test-owner',
+        name: 'test-repo',
+        branch: 'main',
+      };
+
+      const result = await copilot.triggerDocumentationWorkflow(repositoryContext);
+
+      expect(result.success).toBe(true);
+      expect(result.triggered).toBe(true);
+      expect(result.message).toContain('asynchronously');
+    });
+  });
+
+  describe('buildContextualPrompt', () => {
+    it('should replace placeholders with context values', () => {
+      const prompt = 'Repository: {owner}/{name} on {branch}';
+      const context = {
+        owner: 'test-owner',
+        name: 'test-repo',
+        branch: 'main',
+      };
+
+      const result = CopilotCLI.buildContextualPrompt(prompt, context);
+
+      expect(result).toBe('Repository: test-owner/test-repo on main');
     });
   });
 });
