@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repository builds and maintains UpkeepDocs, a GitHub Action that leverages GitHub Copilot CLI to automatically generate markdown documentation for other repositories. This repo uses Astro for its own documentation site and handles the development, testing, security scanning, versioning, and marketplace publication of the UpkeepDocs action.
+This repository builds and maintains Upkeep Docs, a GitHub Action that leverages GitHub Copilot CLI to automatically generate markdown documentation for other repositories. This repo uses Astro for its own documentation site and handles the development, testing, security scanning, versioning, and marketplace publication of the Upkeep Docs action.
 
 ## Glossary
 

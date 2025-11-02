@@ -5,84 +5,62 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 /**
- * Single CLI abstraction for all Copilot commands
+ * Simple Copilot CLI wrapper
  */
 class CopilotCLI {
-  constructor() {
-    this.authenticated = false;
-  }
-
   /**
-   * Check if Copilot CLI is available in the environment
-   * @returns {Promise<boolean>} True if CLI is available
+   * Install GitHub CLI and Copilot extension if not already installed
    */
-  static async isAvailable() {
+  static async install() {
     try {
-      const { stdout } = await execAsync('gh copilot --version');
-      core.debug(`Copilot CLI version: ${stdout.trim()}`);
-      return true;
+      // Check if GitHub CLI is already installed
+      try {
+        await execAsync('gh --version');
+        core.info('GitHub CLI already installed');
+      } catch {
+        // Install GitHub CLI
+        await execAsync('curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg');
+        await execAsync('echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null');
+        await execAsync('sudo apt update && sudo apt install gh -y');
+        core.info('✅ GitHub CLI installed');
+      }
+      
+      // Check if Copilot extension is already installed
+      try {
+        await execAsync('gh copilot --version');
+        core.info('Copilot extension already installed');
+      } catch {
+        // Install Copilot extension
+        await execAsync('gh extension install github/gh-copilot');
+        core.info('✅ Copilot extension installed');
+      }
     } catch (error) {
-      core.debug(`Copilot CLI not available: ${error.message}`);
-      return false;
+      throw new Error(`Installation failed: ${error.message}`);
     }
   }
 
   /**
-   * Authenticate with Copilot CLI
-   * @param {string} githubToken - GitHub personal access token
+   * Authenticate with GitHub token
    */
-  async authenticate(githubToken) {
+  static async authenticate(token) {
     try {
-      core.info('🔐 Authenticating with Copilot CLI...');
-
-      // Set GitHub token for Copilot CLI
-      process.env.GITHUB_TOKEN = githubToken;
-      process.env.GH_TOKEN = githubToken;
-
-      this.authenticated = true;
-      core.info('✅ Copilot CLI authenticated successfully');
+      process.env.GITHUB_TOKEN = token;
+      await execAsync(`echo "${token}" | gh auth login --with-token`);
+      core.info('✅ Authenticated with GitHub');
     } catch (error) {
-      core.error('❌ Failed to authenticate with Copilot CLI:', error.message);
       throw new Error(`Authentication failed: ${error.message}`);
     }
   }
 
   /**
-   * Execute any Copilot CLI command
-   * @param {string} command - The copilot command to execute
-   * @param {Object} options - Optional configuration
-   * @returns {Promise<Object>} Command result with stdout, stderr, and success status
+   * Run copilot command
    */
-  async execute(command, options = {}) {
-    if (!this.authenticated) {
-      throw new Error('Must authenticate before executing commands');
-    }
-
+  static async run(prompt) {
     try {
-      core.info(`🤖 Executing: ${command}`);
-
-      const { stdout, stderr } = await execAsync(command, options);
-
-      if (stderr) {
-        core.warning('⚠️ Command warning:', stderr);
-      }
-
-      core.info('✅ Command executed successfully');
-
-      return {
-        success: true,
-        stdout,
-        stderr,
-      };
+      const { stdout } = await execAsync(`gh copilot suggest "${prompt}"`);
+      return stdout;
     } catch (error) {
-      core.error('❌ Command failed:', error.message);
-
-      return {
-        success: false,
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        error: error.message,
-      };
+      throw new Error(`Copilot command failed: ${error.message}`);
     }
   }
 }

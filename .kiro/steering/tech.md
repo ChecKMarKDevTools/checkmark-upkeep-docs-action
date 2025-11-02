@@ -151,3 +151,17 @@ export default defineConfig({
 - Provide clear, actionable error messages
 - Follow semantic versioning for releases
 - Include comprehensive action metadata in `action.yml`
+
+## Semantic Versioning Guidelines
+
+**Version Management Policy**:
+
+- **After v0.5.0**: Use PATCH version increments (0.5.1, 0.5.2, etc.) for all changes unless explicitly instructed otherwise
+- **PATCH increments**: Bug fixes, feature additions, documentation updates, and general improvements
+- **MINOR increments**: Only when explicitly requested for significant feature additions
+- **MAJOR increments**: Only when explicitly requested for breaking changes
+
+**Implementation**:
+- Always increment the PATCH version in `package.json` for routine updates
+- Only increment MINOR or MAJOR versions when specifically instructed
+- Follow this policy consistently across all development work

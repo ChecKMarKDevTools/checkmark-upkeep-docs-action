@@ -75,12 +75,13 @@ This repository follows GitHub Action conventions with additional infrastructure
 
 ### Principles to Code By
 
-- YAGNI EVER!
+- YAGNI EVER! Before you add anything, consider a simpler approach
 - KISS cause I hate complicated!
 - DRY (Don't Repeat Yourself Without A Very Good Reason)
 - Prefer tools over rebuilding from scratch
 - Security is the most important concern
 - Keep the codebase simple and maintainable
+- Maximum Cognitive Complexity is 15
 
 ## Directory Guidelines
 
@@ -89,6 +90,7 @@ This repository follows GitHub Action conventions with additional infrastructure
 - Keep modules focused and single-purpose
 - Separate concerns: CLI integration, utilities, main orchestration
 - Include comprehensive error handling in all modules
+- Maximum Cognitive Complexity is 15
 
 ### Tests (`tests/`)
 

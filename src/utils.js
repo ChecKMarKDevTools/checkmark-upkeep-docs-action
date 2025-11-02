@@ -20,7 +20,7 @@ const validateInputs = (inputs) => {
  * Handle errors consistently
  */
 const handleError = (error) => {
-  core.error(`❌ UpkeepDocs failed: ${error.message}`);
+  core.error(`❌ Upkeep Docs failed: ${error.message}`);
 
   if (error.stack) {
     core.debug(error.stack);

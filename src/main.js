@@ -4,12 +4,12 @@ import { CopilotCLI } from './copilot-cli.js';
 import { validateInputs, handleError, logContext } from './utils.js';
 
 /**
- * Main entry point for the UpkeepDocs GitHub Action
+ * Main entry point for the Upkeep Docs GitHub Action
  * Implements comprehensive error handling and user feedback as per requirement 5.3
  */
 const run = async () => {
   try {
-    core.info('🚀 Starting UpkeepDocs GitHub Action...');
+    core.info('🚀 Starting Upkeep Docs GitHub Action...');
 
     // Log execution context for debugging and transparency
     const { context } = github;
@@ -29,12 +29,24 @@ const run = async () => {
     const copilot = new CopilotCLI();
 
     // Check CLI availability before authentication
-    const isAvailable = await CopilotCLI.isAvailable();
+    const isAvailable = await CopilotCLI.isCopilotCLIAvailable();
     if (!isAvailable) {
       throw new Error('GitHub Copilot CLI is not available in this environment');
     }
 
-    await copilot.authenticate(inputs.githubToken);
+    // Authenticate and validate setup
+    const authResult = await copilot.authenticateCopilotCLI(inputs.githubToken);
+    core.info(`🔐 Authentication successful: ${authResult.version}`);
+
+    // Validate complete CLI setup
+    const setupValidation = await copilot.validateSetup();
+    if (setupValidation.errors.length > 0) {
+      throw new Error(`CLI setup validation failed: ${setupValidation.errors.join(', ')}`);
+    }
+
+    if (setupValidation.warnings.length > 0) {
+      setupValidation.warnings.forEach((warning) => core.warning(`⚠️ ${warning}`));
+    }
 
     // Set up execution context for documentation generation
     const executionContext = {
@@ -55,14 +67,14 @@ const run = async () => {
     core.debug(`Branch: ${executionContext.repository.branch}`);
 
     // TODO: Implement documentation generation logic in future tasks
-    core.info('✅ UpkeepDocs action completed successfully');
+    core.info('✅ Upkeep Docs action completed successfully');
 
     // Set outputs for workflow integration
     core.setOutput('pr-number', '');
     core.setOutput('pr-url', '');
   } catch (error) {
     // Comprehensive error handling with user feedback
-    core.error(`❌ UpkeepDocs action failed: ${error.message}`);
+    core.error(`❌ Upkeep Docs action failed: ${error.message}`);
 
     // Provide actionable error messages based on error type
     if (error.message.includes('GitHub token')) {
