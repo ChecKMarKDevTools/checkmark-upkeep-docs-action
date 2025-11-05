@@ -59,14 +59,14 @@ jobs:
     
     steps:
     - name: Checkout test repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: ${{ needs.beta-test-preparation.outputs.test-repo }}
         ref: ${{ needs.beta-test-preparation.outputs.test-branch }}
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Checkout action code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: ./.github/actions/upkeep-docs
 
@@ -184,7 +184,7 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Check release criteria
       run: |
