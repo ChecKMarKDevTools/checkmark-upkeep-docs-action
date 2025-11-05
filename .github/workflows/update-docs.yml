@@ -8,58 +8,38 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-docs:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install GitHub Copilot CLI
+      - name: Ensure GitHub Copilot CLI extension
         run: |
-          npm install -g @github/copilot
-          
-      - name: Authenticate Copilot CLI
-        run: |
-          echo "Setting up Copilot CLI authentication..."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Read documentation prompt
-        id: read-prompt
-        run: |
-          if [ -f ".github/prompts/documentation.md" ]; then
-            PROMPT=$(cat .github/prompts/documentation.md)
+          if gh extension list | grep -q "github/gh-copilot"; then
+            gh extension upgrade github/gh-copilot
           else
-            PROMPT="Generate comprehensive markdown documentation for this repository. Analyze the codebase structure, dependencies, and functionality to create clear, helpful documentation including setup instructions, usage examples, and API references. Create or update documentation files in a docs directory and open a pull request with the changes."
+            gh extension install github/gh-copilot
           fi
-          
-          # Add repository context to prompt
-          REPO_NAME="${{ github.repository }}"
-          FULL_PROMPT="Repository: $REPO_NAME
-
-$PROMPT"
-          
-          # Add custom config if provided
-          if [ -n "${{ github.event.inputs.custom-config }}" ]; then
-            FULL_PROMPT="$FULL_PROMPT
-
-Custom configuration: ${{ github.event.inputs.custom-config }}"
-          fi
-          
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
-          echo "$FULL_PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Generate documentation with Copilot CLI
-        run: |
-          echo "🤖 Prompting GitHub Copilot to generate documentation..."
-          copilot "${{ steps.read-prompt.outputs.prompt }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Upkeep Docs action
+        id: upkeep-docs
+        uses: ./.
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          custom-config: ${{ github.event.inputs.custom-config }}
 
       - name: Output results
         run: |
-          echo "✅ Documentation generation completed"
-          echo "Check for any pull requests or changes made by Copilot"
+          echo "✅ Documentation workflow invoked"
+          echo "Pull request number: ${{ steps.upkeep-docs.outputs.pr-number }}"
+          echo "Pull request URL: ${{ steps.upkeep-docs.outputs.pr-url }}"

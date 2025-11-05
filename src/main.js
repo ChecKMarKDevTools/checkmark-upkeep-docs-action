@@ -85,8 +85,8 @@ const run = async () => {
     core.info(`🤖 GitHub Copilot coding agent is now working on your documentation`);
 
     // Set outputs for workflow integration
-    core.setOutput('triggered', 'true');
-    core.setOutput('timestamp', workflowResult.timestamp);
+    core.setOutput('pr-number', workflowResult.pullRequestNumber ?? '');
+    core.setOutput('pr-url', workflowResult.pullRequestUrl ?? '');
 
     core.info('✅ Upkeep Docs action completed successfully');
     core.info('📬 You will receive notifications when the documentation PR is created');

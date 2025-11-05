@@ -1,0 +1,39 @@
+name: Release Please
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Mark the generated GitHub release as pre-release'
+        type: boolean
+        default: true
+        required: false
+      prerelease-type:
+        description: 'Pre-release identifier (alpha, beta, rc, etc.)'
+        type: choice
+        required: false
+        default: beta
+        options:
+          - alpha
+          - beta
+          - rc
+          - preview
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 09:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Run Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        uses: google-github-actions/release-please-action@v4
+        with:
+          manifest-file: .release-please-manifest.json
+          config-file: release-please-config.json
+          prerelease: ${{ inputs.prerelease }}
+          prerelease-type: ${{ inputs.prerelease-type }}

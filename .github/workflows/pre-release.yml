@@ -1,0 +1,161 @@
+name: "Pre-Release Management"
+
+on:
+  workflow_dispatch:
+    inputs:
+      pre-release-type:
+        description: 'Type of pre-release'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pre-release:
+    name: Create Pre-Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Determine pre-release version
+      id: version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        PRE_RELEASE_TYPE="${{ github.event.inputs.pre-release-type }}"
+        
+        # Get existing pre-release tags for this base version/type
+        EXISTING_TAGS=$(git tag -l "v${CURRENT_VERSION}-${PRE_RELEASE_TYPE}.*" | sort -V)
+        
+        if [ -z "$EXISTING_TAGS" ]; then
+          PRE_RELEASE_NUMBER=1
+        else
+          LAST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
+          PRE_RELEASE_NUMBER=$(echo "$LAST_TAG" | sed "s/v${CURRENT_VERSION}-${PRE_RELEASE_TYPE}.//" | awk '{print $1 + 1}')
+        fi
+        
+        PRE_RELEASE_VERSION="${CURRENT_VERSION}-${PRE_RELEASE_TYPE}.${PRE_RELEASE_NUMBER}"
+        
+        echo "pre-release-version=$PRE_RELEASE_VERSION" >> $GITHUB_OUTPUT
+        echo "pre-release-type=$PRE_RELEASE_TYPE" >> $GITHUB_OUTPUT
+        
+        echo "📦 Pre-Release Version:"
+        echo "Base version: $CURRENT_VERSION"
+        echo "Pre-release type: $PRE_RELEASE_TYPE"
+        echo "Pre-release version: $PRE_RELEASE_VERSION"
+
+    - name: Run tests before pre-release
+      run: |
+        npm ci
+        npm run validate
+
+    - name: Generate pre-release changelog
+      id: changelog
+      run: |
+        PRE_RELEASE_VERSION="${{ steps.version.outputs.pre-release-version }}"
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        CREATURE_BLURB="As code reviews unfold, vampires sharpen their fangs on edge cases while ogres stress-test the ramparts for brute-force regressions."
+        HEADLINE_EMOJI="🩸"
+        
+        if [ -z "$LAST_TAG" ]; then
+          COMMIT_RANGE="HEAD"
+        else
+          COMMIT_RANGE="${LAST_TAG}..HEAD"
+        fi
+        
+        cat > pre_release_notes.md << EOF
+        ## ${HEADLINE_EMOJI} Midnight Pre-Release $PRE_RELEASE_VERSION
+        
+        **⚠️ This is a pre-release version and may contain bugs or incomplete features.**
+        
+        ${CREATURE_BLURB}
+        
+        ### Changes since last release:
+        
+        EOF
+        
+        # Get recent commits
+        git log $COMMIT_RANGE --oneline --no-merges | head -20 | sed 's/^[a-f0-9]* /- /' >> pre_release_notes.md
+        
+        cat >> pre_release_notes.md << EOF
+        
+        ### Testing Instructions (sanity for mortals)
+        
+        To test this pre-release:
+        
+        \`\`\`yaml
+        - uses: ChecKMarKDevTools/checkmark-upkeep-docs-action@v$PRE_RELEASE_VERSION
+          with:
+            github-token: \${{ secrets.GITHUB_TOKEN }}
+        \`\`\`
+        
+        When the pipeline runs, keep an eye out for nocturnal regressions and ogre-sized resource spikes.
+        
+        ### Feedback
+        
+        Please report any issues or feedback in the [Issues](https://github.com/ChecKMarKDevTools/checkmark-upkeep-docs-action/issues) section.
+        EOF
+        
+        {
+          echo 'changelog<<EOF'
+          cat pre_release_notes.md
+          echo 'EOF'
+        } >> $GITHUB_OUTPUT
+
+    - name: Create and push pre-release tag
+      run: |
+        PRE_RELEASE_VERSION="${{ steps.version.outputs.pre-release-version }}"
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        git tag -a "v$PRE_RELEASE_VERSION" -m "Pre-release v$PRE_RELEASE_VERSION"
+        git push origin "v$PRE_RELEASE_VERSION"
+
+    - name: Create GitHub Pre-Release
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const preReleaseVersion = '${{ steps.version.outputs.pre-release-version }}';
+          const changelog = `${{ steps.changelog.outputs.changelog }}`;
+          
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: `v${preReleaseVersion}`,
+            name: `Pre-Release v${preReleaseVersion}`,
+            body: changelog,
+            draft: false,
+            prerelease: true
+          });
+          
+          console.log(`✅ Created pre-release: ${release.data.html_url}`);
+
+    - name: Notify about pre-release
+      run: |
+        PRE_RELEASE_VERSION="${{ steps.version.outputs.pre-release-version }}"
+        PRE_RELEASE_TYPE="${{ steps.version.outputs.pre-release-type }}"
+        
+        echo "🚀 Pre-release v$PRE_RELEASE_VERSION created successfully!"
+        echo "Type: $PRE_RELEASE_TYPE"
+        echo ""
+        echo "Next steps:"
+        echo "1. Summon courageous testers after dusk"
+        echo "2. Gather feedback from any lingering familiars"
+        echo "3. Fix critical curses or club-swinging bugs"
+        echo "4. Promote to stable release when the coven approves"

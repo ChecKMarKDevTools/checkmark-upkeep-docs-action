@@ -11,11 +11,11 @@ inputs:
     required: false
 
 outputs:
-  triggered:
-    description: 'Whether the coding agent was successfully triggered'
-  timestamp:
-    description: 'Timestamp when the coding agent was triggered'
+  pr-number:
+    description: 'Pull request number created by the coding agent (if available)'
+  pr-url:
+    description: 'URL of the pull request created by the coding agent (if available)'
 
 runs:
-  using: 'node22'
-  main: 'src/main.js'
+  using: 'node20'
+  main: 'dist/index.js'

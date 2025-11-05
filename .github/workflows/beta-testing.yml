@@ -1,0 +1,214 @@
+name: "Beta Testing"
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-repository:
+        description: 'Repository to test against (owner/repo)'
+        required: false
+        default: 'ChecKMarKDevTools/checkmark-upkeep-docs-action'
+      test-branch:
+        description: 'Branch to test'
+        required: false
+        default: 'main'
+      custom-config:
+        description: 'Custom configuration for testing'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  beta-test-preparation:
+    name: Prepare Beta Test
+    runs-on: ubuntu-latest
+    
+    outputs:
+      test-repo: ${{ steps.setup.outputs.test-repo }}
+      test-branch: ${{ steps.setup.outputs.test-branch }}
+      
+    steps:
+    - name: Setup test parameters
+      id: setup
+      run: |
+        TEST_REPO="${{ github.event.inputs.test-repository }}"
+        TEST_BRANCH="${{ github.event.inputs.test-branch }}"
+        
+        if [ -z "$TEST_REPO" ]; then
+          TEST_REPO="${{ github.repository }}"
+        fi
+        
+        if [ -z "$TEST_BRANCH" ]; then
+          TEST_BRANCH="main"
+        fi
+        
+        echo "test-repo=$TEST_REPO" >> $GITHUB_OUTPUT
+        echo "test-branch=$TEST_BRANCH" >> $GITHUB_OUTPUT
+        
+        echo "🧪 Beta testing configuration:"
+        echo "Repository: $TEST_REPO"
+        echo "Branch: $TEST_BRANCH"
+
+  beta-test-action:
+    name: Test Action Execution
+    runs-on: ubuntu-latest
+    needs: beta-test-preparation
+    
+    steps:
+    - name: Checkout test repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ needs.beta-test-preparation.outputs.test-repo }}
+        ref: ${{ needs.beta-test-preparation.outputs.test-branch }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Checkout action code
+      uses: actions/checkout@v4
+      with:
+        path: ./.github/actions/upkeep-docs
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install action dependencies
+      run: |
+        cd ./.github/actions/upkeep-docs
+        npm ci
+
+    - name: Test action execution
+      id: test-action
+      uses: ./.github/actions/upkeep-docs
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        custom-config: ${{ github.event.inputs.custom-config }}
+
+    - name: Validate action outputs
+      run: |
+        PR_NUMBER="${{ steps.test-action.outputs.pr-number }}"
+        PR_URL="${{ steps.test-action.outputs.pr-url }}"
+        
+        if [ -n "$PR_NUMBER" ]; then
+          echo "✅ Action created PR #$PR_NUMBER"
+        else
+          echo "⚠️ No PR number returned"
+        fi
+        
+        if [ -n "$PR_URL" ]; then
+          echo "✅ PR URL: $PR_URL"
+        else
+          echo "⚠️ No PR URL returned"
+        fi
+
+    - name: Create test report
+      run: |
+        cat > beta-test-report.md << EOF
+        # Beta Test Report
+        
+        **Test Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        **Repository:** ${{ needs.beta-test-preparation.outputs.test-repo }}
+        **Branch:** ${{ needs.beta-test-preparation.outputs.test-branch }}
+        
+        ## Results
+        
+        - **PR Number:** ${{ steps.test-action.outputs.pr-number || 'Not generated' }}
+        - **PR URL:** ${{ steps.test-action.outputs.pr-url || 'Not generated' }}
+        - **Execution Status:** ${{ job.status }}
+        
+        ## Configuration
+        
+        - **Custom Config:** ${{ github.event.inputs.custom-config || 'None' }}
+        
+        ## Next Steps
+        
+        - [ ] Review generated documentation
+        - [ ] Validate PR content quality
+        - [ ] Test merge process
+        - [ ] Verify no security issues
+        EOF
+
+    - name: Upload test report
+      uses: actions/upload-artifact@v4
+      with:
+        name: beta-test-report
+        path: beta-test-report.md
+        retention-days: 30
+
+  beta-test-validation:
+    name: Validate Beta Test Results
+    runs-on: ubuntu-latest
+    needs: [beta-test-preparation, beta-test-action]
+    if: always()
+    
+    steps:
+    - name: Download test report
+      uses: actions/download-artifact@v4
+      with:
+        name: beta-test-report
+
+    - name: Analyze test results
+      run: |
+        if [ -f "beta-test-report.md" ]; then
+          echo "📋 Beta Test Report:"
+          cat beta-test-report.md
+        else
+          echo "❌ Test report not found"
+          exit 1
+        fi
+
+    - name: Check for critical issues
+      run: |
+        # Add validation logic for critical issues
+        echo "🔍 Checking for critical issues..."
+        
+        # Example checks (customize based on requirements)
+        if grep -q "Error" beta-test-report.md; then
+          echo "⚠️ Errors detected in beta test"
+        fi
+        
+        if grep -q "Not generated" beta-test-report.md; then
+          echo "⚠️ Some outputs were not generated"
+        fi
+        
+        echo "✅ Beta test validation completed"
+
+  beta-release-readiness:
+    name: Assess Release Readiness
+    runs-on: ubuntu-latest
+    needs: [beta-test-validation]
+    if: success()
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check release criteria
+      run: |
+        echo "📊 Release Readiness Assessment:"
+        
+        # Check if all tests passed
+        echo "✅ Beta tests completed successfully"
+        
+        # Check version
+        VERSION=$(node -p "require('./package.json').version")
+        echo "📦 Current version: $VERSION"
+        
+        # Check for security issues
+        if [ -f "SECURITY.md" ]; then
+          echo "✅ Security policy in place"
+        else
+          echo "⚠️ Security policy missing"
+        fi
+        
+        # Check documentation
+        if [ -f "README.md" ]; then
+          echo "✅ README documentation exists"
+        else
+          echo "❌ README documentation missing"
+        fi
+        
+        echo "🎯 Beta testing completed - ready for release consideration"

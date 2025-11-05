@@ -131,7 +131,6 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -198,5 +197,8 @@ dist
 .history
 .ionide
 *.tmp
+
+# Include compiled GitHub Action bundle
+!dist/
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,astro,node

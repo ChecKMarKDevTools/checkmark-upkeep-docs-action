@@ -1,0 +1,363 @@
+name: "Release Management"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: 'Type of release'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      pre-release:
+        description: 'Create pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  check-changes:
+    name: Check for Release-worthy Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should-release: ${{ steps.check.outputs.should-release }}
+      release-type: ${{ steps.check.outputs.release-type }}
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for conventional commits
+      id: check
+      run: |
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LAST_TAG" ]; then
+          echo "No previous tags found, creating initial release"
+          echo "should-release=true" >> $GITHUB_OUTPUT
+          echo "release-type=minor" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Get commits since last tag
+        COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+        
+        if [ -z "$COMMITS" ]; then
+          echo "No new commits since last release"
+          echo "should-release=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Analyze commit messages for conventional commits
+        BREAKING_CHANGES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ .*(BREAKING CHANGE|!:)" || true)
+        FEATURES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ feat(\(.+\))?: " || true)
+        FIXES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ fix(\(.+\))?: " || true)
+        
+        # Determine release type
+        if [ -n "$BREAKING_CHANGES" ]; then
+          RELEASE_TYPE="major"
+        elif [ -n "$FEATURES" ]; then
+          RELEASE_TYPE="minor"
+        elif [ -n "$FIXES" ]; then
+          RELEASE_TYPE="patch"
+        else
+          # Check for other significant changes
+          OTHER_CHANGES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ (docs|ci|build|perf|refactor)(\(.+\))?: " || true)
+          if [ -n "$OTHER_CHANGES" ]; then
+            RELEASE_TYPE="patch"
+          else
+            echo "No release-worthy changes found"
+            echo "should-release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+        fi
+        
+        # Override with manual input if provided
+        if [ "${{ github.event.inputs.release-type }}" != "" ]; then
+          RELEASE_TYPE="${{ github.event.inputs.release-type }}"
+        fi
+        
+        echo "should-release=true" >> $GITHUB_OUTPUT
+        echo "release-type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+        
+        echo "📋 Release Analysis:"
+        echo "- Breaking changes: $(echo "$BREAKING_CHANGES" | wc -l)"
+        echo "- Features: $(echo "$FEATURES" | wc -l)"
+        echo "- Fixes: $(echo "$FIXES" | wc -l)"
+        echo "- Recommended release type: $RELEASE_TYPE"
+
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    needs: check-changes
+    if: needs.check-changes.outputs.should-release == 'true'
+    outputs:
+      new-version: ${{ steps.version.outputs.new-version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Calculate new version
+      id: version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        RELEASE_TYPE="${{ needs.check-changes.outputs.release-type }}"
+        
+        # Simple semantic version increment
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]}
+        
+        case $RELEASE_TYPE in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+        echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        
+        echo "📦 Version Update:"
+        echo "Current: $CURRENT_VERSION"
+        echo "New: $NEW_VERSION"
+        echo "Type: $RELEASE_TYPE"
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        NEW_VERSION="${{ steps.version.outputs.new-version }}"
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        CASTLE_MOOD="Within the fortress halls, vampires pore over merged pull requests while ogres stress-test the gatehouse with load-bearing scripts."
+        
+        if [ -z "$LAST_TAG" ]; then
+          COMMIT_RANGE="HEAD"
+        else
+          COMMIT_RANGE="${LAST_TAG}..HEAD"
+        fi
+        
+        # Generate changelog content
+        cat > changelog_entry.md << EOF
+        ## 🏰 Release $NEW_VERSION - $(date +%Y-%m-%d)
+        
+        ${CASTLE_MOOD}
+        
+        The torches are lit, the coffins are open, and the war drums keep time for deployment.
+        
+        EOF
+        
+        # Get commits and categorize them
+        COMMITS=$(git log $COMMIT_RANGE --oneline --no-merges)
+        
+        # Breaking changes
+        BREAKING=$(echo "$COMMITS" | grep -E "(BREAKING CHANGE|!:)" || true)
+        if [ -n "$BREAKING" ]; then
+          echo "### 💥 BREAKING CHANGES" >> changelog_entry.md
+          echo "$BREAKING" | sed 's/^[a-f0-9]* /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Features
+        FEATURES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ feat(\(.+\))?: " || true)
+        if [ -n "$FEATURES" ]; then
+          echo "### ✨ Features" >> changelog_entry.md
+          echo "$FEATURES" | sed 's/^[a-f0-9]* feat[^:]*: /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Bug fixes
+        FIXES=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ fix(\(.+\))?: " || true)
+        if [ -n "$FIXES" ]; then
+          echo "### 🐛 Bug Fixes" >> changelog_entry.md
+          echo "$FIXES" | sed 's/^[a-f0-9]* fix[^:]*: /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Documentation
+        DOCS=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ docs(\(.+\))?: " || true)
+        if [ -n "$DOCS" ]; then
+          echo "### 📚 Documentation" >> changelog_entry.md
+          echo "$DOCS" | sed 's/^[a-f0-9]* docs[^:]*: /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Performance improvements
+        PERF=$(echo "$COMMITS" | grep -E "^[a-f0-9]+ perf(\(.+\))?: " || true)
+        if [ -n "$PERF" ]; then
+          echo "### ⚡ Performance Improvements" >> changelog_entry.md
+          echo "$PERF" | sed 's/^[a-f0-9]* perf[^:]*: /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Other changes
+        OTHER=$(echo "$COMMITS" | grep -vE "(feat|fix|docs|perf|BREAKING|!:)(\(.+\))?: " || true)
+        if [ -n "$OTHER" ]; then
+          echo "### 🔧 Other Changes" >> changelog_entry.md
+          echo "$OTHER" | sed 's/^[a-f0-9]* /- /' >> changelog_entry.md
+          echo "" >> changelog_entry.md
+        fi
+        
+        # Set output for use in release
+        {
+          echo 'changelog<<EOF'
+          cat changelog_entry.md
+          echo 'EOF'
+        } >> $GITHUB_OUTPUT
+
+    - name: Update CHANGELOG.md
+      run: |
+        NEW_VERSION="${{ steps.version.outputs.new-version }}"
+        
+        # Create or update CHANGELOG.md
+        if [ ! -f "CHANGELOG.md" ]; then
+          cat > CHANGELOG.md << EOF
+        # Changelog
+        
+        All notable changes to this project will be documented in this file.
+        
+        The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+        and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+        
+        EOF
+        fi
+        
+        # Insert new changelog entry
+        {
+          head -n 6 CHANGELOG.md
+          cat changelog_entry.md
+          tail -n +7 CHANGELOG.md
+        } > CHANGELOG_new.md
+        
+        mv CHANGELOG_new.md CHANGELOG.md
+
+    - name: Update package.json version
+      run: |
+        NEW_VERSION="${{ steps.version.outputs.new-version }}"
+        
+        # Update version in package.json
+        node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.version = '$NEW_VERSION';
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+        "
+
+    - name: Commit version changes
+      run: |
+        NEW_VERSION="${{ steps.version.outputs.new-version }}"
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        git add package.json CHANGELOG.md
+        git commit -m "chore(release): bump version to $NEW_VERSION"
+        git push
+
+    - name: Upload changelog
+      uses: actions/upload-artifact@v4
+      with:
+        name: changelog-entry
+        path: changelog_entry.md
+        retention-days: 7
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [check-changes, generate-changelog]
+    if: needs.check-changes.outputs.should-release == 'true'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: main
+
+    - name: Pull latest changes
+      run: git pull origin main
+
+    - name: Create and push tag
+      run: |
+        NEW_VERSION="${{ needs.generate-changelog.outputs.new-version }}"
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
+        git push origin "v$NEW_VERSION"
+
+    - name: Create GitHub Release
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const newVersion = '${{ needs.generate-changelog.outputs.new-version }}';
+          const changelog = `${{ needs.generate-changelog.outputs.changelog }}`;
+          const isPreRelease = ${{ github.event.inputs.pre-release || false }};
+          
+          const release = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: `v${newVersion}`,
+            name: `Release v${newVersion}`,
+            body: changelog,
+            draft: false,
+            prerelease: isPreRelease
+          });
+          
+          console.log(`✅ Created release: ${release.data.html_url}`);
+
+    - name: Announce release to the night shift
+      run: |
+        NEW_VERSION="${{ needs.generate-changelog.outputs.new-version }}"
+        echo "🩸 The coven has stamped release v$NEW_VERSION."
+        echo "Ogres report the ramparts are holding; vampires are clearing the final code reviews."
+        echo "Sound the war drums, deploy at dusk, and keep garlic away from the runners."
+
+    - name: Update major version tag
+      if: needs.check-changes.outputs.should-release == 'true'
+      run: |
+        NEW_VERSION="${{ needs.generate-changelog.outputs.new-version }}"
+        MAJOR_VERSION=$(echo $NEW_VERSION | cut -d. -f1)
+        
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Delete existing major version tag if it exists
+        git tag -d "v$MAJOR_VERSION" 2>/dev/null || true
+        git push origin ":refs/tags/v$MAJOR_VERSION" 2>/dev/null || true
+        
+        # Create new major version tag
+        git tag -a "v$MAJOR_VERSION" -m "Major version v$MAJOR_VERSION"
+        git push origin "v$MAJOR_VERSION"
+        
+        echo "✅ Updated major version tag v$MAJOR_VERSION"

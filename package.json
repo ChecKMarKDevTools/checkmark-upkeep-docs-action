@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/upkeep-docs.git"
+    "url": "git+https://github.com/ChecKMarKDevTools/checkmark-upkeep-docs-action.git"
   },
   "keywords": [
     "checkmark",

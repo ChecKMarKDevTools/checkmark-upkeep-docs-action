@@ -17,7 +17,6 @@ module.exports = {
       },
     ],
     'import/prefer-default-export': 'off',
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-warning-comments': ['error', { terms: ['eslint-disable'], location: 'anywhere' }],
   },
   overrides: [
