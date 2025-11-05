@@ -285,7 +285,7 @@ jobs:
         git push
 
     - name: Upload changelog
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: changelog-entry
         path: changelog_entry.md
