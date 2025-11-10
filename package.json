@@ -1,6 +1,6 @@
 {
   "name": "checkmark-upkeep-docs-action",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "type": "module",
   "description": "🚧 WIP: Human-in-the-loop documentation automation for systems architecture. Coordinates GitHub workflows, agents, and reusable prompts to keep architecture docs current and consistent. Next up: prompt-driven test cases, README upkeep, and developer guide generation.",
   "scripts": {
