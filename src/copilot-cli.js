@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { sanitizeInput } from './utils.js';
 
 const execAsync = promisify(exec);
@@ -35,7 +35,7 @@ const PREDEFINED_PROMPTS = {
     - Has existing docs directory: {hasDocs}
 
     After generating the comprehensive documentation with Mermaid diagrams:
-    - You are responsible for self-validation. Do not depend on the repo to validate for you. 
+    - You are responsible for self-validation. Do not depend on the repo to validate for you.
     - Create a pull request with title "docs: Generate comprehensive technical documentation with architecture diagrams"
     - Include a detailed description of what documentation was added/updated
     - Add appropriate labels like "documentation", "enhancement"
@@ -50,10 +50,8 @@ const PREDEFINED_PROMPTS = {
  * Implements requirements 4.1, 4.2, 4.3, 4.4, 4.5
  */
 class CopilotCLI {
-  constructor() {
-    this.authenticated = false;
-    this.version = null;
-  }
+  authenticated = false;
+  version = null;
 
   /**
    * Check if GitHub Copilot CLI is available in the environment
@@ -145,6 +143,8 @@ class CopilotCLI {
         context: sanitizedContext,
         timestamp: new Date().toISOString(),
         message: 'Coding agent triggered successfully. PR will be created asynchronously.',
+        pullRequestNumber: null,
+        pullRequestUrl: '',
       };
     } catch (error) {
       const errorMessage = `Coding agent trigger failed: ${error.message}`;
@@ -188,6 +188,8 @@ class CopilotCLI {
         context: result.context,
         timestamp: result.timestamp,
         message: 'Documentation workflow triggered. Coding agent will create PR asynchronously.',
+        pullRequestNumber: result.pullRequestNumber,
+        pullRequestUrl: result.pullRequestUrl,
       };
     } catch (error) {
       core.error(`Documentation workflow trigger failed: ${error.message}`);
@@ -210,7 +212,7 @@ class CopilotCLI {
       // Check GitHub CLI availability
       await execAsync('gh --version');
       validation.checks.githubCLI = true;
-    } catch (error) {
+    } catch {
       validation.errors.push('GitHub CLI not available');
       validation.checks.githubCLI = false;
     }
@@ -219,7 +221,7 @@ class CopilotCLI {
       // Check Copilot extension
       await execAsync('gh copilot --version');
       validation.checks.copilotExtension = true;
-    } catch (error) {
+    } catch {
       validation.errors.push('GitHub Copilot CLI extension not available');
       validation.checks.copilotExtension = false;
     }
@@ -228,7 +230,7 @@ class CopilotCLI {
       // Check authentication status
       await execAsync('gh auth status');
       validation.checks.authentication = true;
-    } catch (error) {
+    } catch {
       validation.warnings.push('GitHub CLI not authenticated');
       validation.checks.authentication = false;
     }
@@ -273,9 +275,9 @@ class CopilotCLI {
   static async triggerCopilotCodingAgent(prompt, context) {
     try {
       // Create a temporary file with the prompt for the coding agent
-      const fs = await import('fs');
-      const path = await import('path');
-      const os = await import('os');
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const os = await import('node:os');
 
       const tempDir = os.tmpdir();
       const promptFile = path.join(tempDir, `copilot-prompt-${Date.now()}.md`);

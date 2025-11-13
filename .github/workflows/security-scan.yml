@@ -1,12 +1,12 @@
-name: "Security Scanning"
+name: 'Security Scanning'
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
   schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+    - cron: '35 2 * * 1' # Weekly on Mondays at 2:35 AM UTC
 
 permissions:
   contents: read
@@ -17,113 +17,113 @@ jobs:
   dependency-scan:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run npm audit
-      run: |
-        npm audit --audit-level=moderate --json > audit-results.json || true
-        
-    - name: Check for high/critical vulnerabilities
-      run: |
-        if npm audit --audit-level=high; then
-          echo "✅ No high or critical vulnerabilities found"
-        else
-          echo "❌ High or critical vulnerabilities detected"
-          npm audit --audit-level=high
-          exit 1
-        fi
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
 
-    - name: Upload audit results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: npm-audit-results
-        path: audit-results.json
-        retention-days: 30
+      - name: Check for high/critical vulnerabilities
+        run: |
+          if npm audit --audit-level=high; then
+            echo "✅ No high or critical vulnerabilities found"
+          else
+            echo "❌ High or critical vulnerabilities detected"
+            npm audit --audit-level=high
+            exit 1
+          fi
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-results
+          path: audit-results.json
+          retention-days: 30
 
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-    - name: Run Trivy secret scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-secrets.sarif'
-        scanners: 'secret'
+      - name: Run Trivy secret scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-secrets.sarif'
+          scanners: 'secret'
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-secrets.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-secrets.sarif'
 
   license-scan:
     name: License Compliance Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Check license compatibility
-      run: |
-        npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;CC0-1.0' || {
-          echo "❌ License compatibility issues detected"
-          npx license-checker --detailed
-          exit 1
-        }
+      - name: Check license compatibility
+        run: |
+          npx license-checker --production --summary --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;PSF-2.0' || {
+            echo "❌ License compatibility issues detected"
+            npx license-checker --production --detailed
+            exit 1
+          }
 
   security-policy-check:
     name: Security Policy Validation
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-    - name: Check for SECURITY.md
-      run: |
-        if [ -f "SECURITY.md" ]; then
-          echo "✅ SECURITY.md file found"
-        else
-          echo "❌ SECURITY.md file missing"
-          exit 1
-        fi
+      - name: Check for SECURITY.md
+        run: |
+          if [ -f "SECURITY.md" ]; then
+            echo "✅ SECURITY.md file found"
+          else
+            echo "❌ SECURITY.md file missing"
+            exit 1
+          fi
 
-    - name: Validate security policy content
-      run: |
-        if grep -q "security@" SECURITY.md; then
-          echo "✅ Security contact information found"
-        else
-          echo "⚠️ No security contact information found in SECURITY.md"
-        fi
+      - name: Validate security policy content
+        run: |
+          if grep -q "security@" SECURITY.md; then
+            echo "✅ Security contact information found"
+          else
+            echo "⚠️ No security contact information found in SECURITY.md"
+          fi

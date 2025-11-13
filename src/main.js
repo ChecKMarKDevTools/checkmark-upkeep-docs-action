@@ -10,6 +10,7 @@ import { validateInputs, handleError, logContext } from './utils.js';
 const run = async () => {
   try {
     core.info('🚀 Starting Upkeep Docs GitHub Action...');
+    console.log('test');
 
     // Log execution context for debugging and transparency
     const { context } = github;
@@ -45,7 +46,9 @@ const run = async () => {
     }
 
     if (setupValidation.warnings.length > 0) {
-      setupValidation.warnings.forEach((warning) => core.warning(`⚠️ ${warning}`));
+      for (const warning of setupValidation.warnings) {
+        core.warning(`⚠️ ${warning}`);
+      }
     }
 
     // Set up execution context for documentation generation

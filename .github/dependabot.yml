@@ -1,52 +1,60 @@
 version: 2
 updates:
   # Enable version updates for npm
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "02:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '02:00'
     open-pull-requests-limit: 10
     assignees:
-      - "anchildress1"
+      - 'anchildress1'
     commit-message:
-      prefix: "deps"
-      include: "scope"
+      prefix: 'deps'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "security"
+      - 'dependencies'
+      - 'security'
+    groups:
+      all-updates:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+          - 'major'
 
   # Enable version updates for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "02:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '02:00'
     open-pull-requests-limit: 5
     assignees:
-      - "anchildress1"
+      - 'anchildress1'
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
     labels:
-      - "github-actions"
-      - "security"
+      - 'github-actions'
+      - 'security'
 
   # Enable version updates for Astro documentation site
-  - package-ecosystem: "npm"
-    directory: "/docs"
+  - package-ecosystem: 'npm'
+    directory: '/docs'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "02:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '02:00'
     open-pull-requests-limit: 5
     assignees:
-      - "anchildress1"
+      - 'anchildress1'
     commit-message:
-      prefix: "docs-deps"
-      include: "scope"
+      prefix: 'docs-deps'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "documentation"
+      - 'dependencies'
+      - 'documentation'
